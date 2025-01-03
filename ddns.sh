@@ -1,5 +1,5 @@
 #!/bin/sh
-# dnssec-keygen -T key -a ED25519 -n HOST example.net
+# tsig-keygen -a HMAC-SHA512 keyname >> keyfile
 ## Please add an empty DNS record before use.
 ## example.net IN A 0.0.0.0
 ## example.net IN AAAA ::1
