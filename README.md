@@ -8,7 +8,7 @@ Script นี้รองรับทั้ง IPv4 และ IPv6
 ## ความต้องการ
 
 
-ต้องติดตั้ง nsupdate ก่อน (bind9-dnsutils) หากติดตั้งไว้แล้วก็สามารถใช้งานได้เลย
+ต้องติดตั้ง nsupdate ก่อน (`bind9-dnsutils` บน Debian, `bind9-next-utils` บน RHEL-based และ `dnsutils` บน Arch Linux) หากติดตั้งไว้แล้วก็สามารถใช้งานได้เลย
 
 เพียงแค่แก้ไขไฟล์ Script ตามคำแนะนำข้างในไฟล์
 
