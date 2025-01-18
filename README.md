@@ -37,6 +37,10 @@ zone "example.net" in {
 	. . .
 };
 ```
+โหลด config ใหม่
+```
+rndc reconfig
+```
 ## ซอฟต์แวร์ที่ต้องติดตั้งก่อนใช้งานบนเครื่อง Client
 
 
