@@ -340,6 +340,19 @@ get_ip_address() {
 get_ip_address_old() {
 	if [ "$RECORD_TYPE" = "4" ] || [ "$RECORD_TYPE" = "both" ] ;then
 		IP4_OLD="$(dig $QNAME +short $DIG_OPTION -t A)"
+		GET_ADDRESS_4_EXIT_CODE="$?"
+		if [ "$GET_ADDRESS_4_EXIT_CODE" != "0" ] ; then
+			echo "DiG Unable to get old address 4"
+			if [ ! -z "$DISCORD_URL" ]; then
+				curl \
+				  -H "Content-Type: application/json" \
+				  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "DiG Unable to get old address 4, DiG exit code $GET_ADDRESS_4_EXIT_CODE, Output message $IP4_OLD" '{"username": $username, "content": $content}')" \
+				  $DISCORD_URL
+				jq -n --arg username $DISCORD_HOOKNAME --arg content "DiG Unable to get old address 4, DiG exit code $GET_ADDRESS_4_EXIT_CODE, Output message $IP4_OLD" '{"username": $username, "content": $content}'
+				exit 1
+			fi
+			exit 1
+		fi
 		if [ -z "$IP4_OLD" ]; then
 			echo "Please add \"A\" record before use. (0.0.0.0)"
 			exit 1
@@ -348,6 +361,19 @@ get_ip_address_old() {
 	fi
 	if [ "$RECORD_TYPE" = "6" ] || [ "$RECORD_TYPE" = "both" ] ;then
 		IP6_OLD="$(dig $QNAME +short $DIG_OPTION -t AAAA)"
+		GET_ADDRESS_6_EXIT_CODE="$?"
+		if [ "$GET_ADDRESS_6_EXIT_CODE" != "0" ] ; then
+			echo "DiG Unable to get old address 6"
+			if [ ! -z "$DISCORD_URL" ]; then
+				curl \
+				  -H "Content-Type: application/json" \
+				  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "DiG Unable to get old address 6, DiG exit code $GET_ADDRESS_6_EXIT_CODE, Output message $IP6_OLD" '{"username": $username, "content": $content}')" \
+				  $DISCORD_URL
+				jq -n --arg username $DISCORD_HOOKNAME --arg content "DiG Unable to get old address 6, DiG exit code $GET_ADDRESS_6_EXIT_CODE, Output message $IP6_OLD" '{"username": $username, "content": $content}'
+				exit 1
+			fi
+			exit 1
+		fi
 		if [ -z "$IP6_OLD" ]; then
 			echo "Please add \"AAAA\" record before use. (::1)"
 			exit 1
