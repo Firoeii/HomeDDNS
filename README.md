@@ -1,5 +1,5 @@
 # HomeDDNS
-Shell Script Home DDNS (BIND9 nsupdate)
+Shell Script Home DDNS (BIND9 nsupdate RFC2136)
 
 Script นี้รองรับทั้ง IPv4 และ IPv6
 
@@ -9,14 +9,14 @@ Script นี้รองรับทั้ง IPv4 และ IPv6
 include "/etc/bind/key/*.key";
 ```
 สร้างไดเรกเทอรีใหม่ที่ ```/etc/bind/key```
-```
-mkdir -p /etc/bind/key
-cd /etc/bind/key
+```sh
+~ # mkdir -p /etc/bind/key
+~ # cd /etc/bind/key
 ```
 สร้าง TSIG key สามารถเลือกอัลกอริทึมได้ตามสะดวก
-```
-tsig-keygen -a hmac-sha512 myhome.example.net > myhome.example.net.key
-cat myhome.example.net.key
+```sh
+~ # tsig-keygen -a hmac-sha512 myhome.example.net > myhome.example.net.key
+~ # cat myhome.example.net.key
 ```
 ตัวอย่าง
 ```
@@ -39,7 +39,25 @@ zone "example.net" in {
 ```
 โหลด config ใหม่
 ```
-rndc reconfig
+~ # rndc reconfig
+```
+## Build
+ไฟล์ไบนารีที่แถมมาเป็น linux elf amd64 หากต้องการ build ใหม่ หรือ cpu ใช้สถาปัตยกรรมอื่น ๆ สามารถ build ขึ้นมาใหม่ได้โดยใช้คำสั่ง```make```
+```sh
+# ต้องการ gcc
+~/HomeDDNS$ make
+gcc -Os -s -Wall -Wextra -ffunction-sections -fdata-sections -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables -fomit-frame-pointer -Wl,--gc-sections src/gcc/validate-ipv4-6.c -o validate-ipv4-6.elf
+```
+## Crontab
+ตัวอย่าง โดยสามารถสำเนา ```ddns.sh``` เป็นไฟล์อะไรก็ได้และแก้ไขชื่อ DNS ตามต้องการ และเพิ่มไปยัง crontab ประมาณนี้
+```sh
+# เนื่องจาก ddns.sh ไม่มีการดึง IP จากภายนอกแบบสด ๆ อีกต่อไป จะไปดึงจากแคชใน tmp แทน ต้องเพิ่ม get-ip.sh ลงไปด้วย นี่จะเป็นผลดีหากเครื่องนี้มีหลายโดเมน
+* * * * * /bin/timeout 30 /home/USER/HomeDDNS/get-ip.sh >/dev/null 2>&1
+* * * * * /bin/timeout 30 /home/USER/HomeDDNS/ddns.sh >/dev/null 2>&1
+# หากมีโดเมนอื่น ๆ หรือ หลายซับโดเมนก็ให้สำเนาไฟล์ script มาเพิ่มได้เรื่อย ๆ
+* * * * * /bin/timeout 30 /home/USER/HomeDDNS/ddnsX.sh >/dev/null 2>&1
+. . .
+* * * * * /bin/timeout 30 /home/USER/HomeDDNS/ddnsN.sh >/dev/null 2>&1
 ```
 ## ซอฟต์แวร์ที่ต้องติดตั้งก่อนใช้งานบนเครื่อง Client
 
