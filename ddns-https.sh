@@ -26,6 +26,7 @@ TSIG_PATH="/PATH/TO/KEY/FILE"
 ## DiG Option "+tls-ca @1.1.1.1"
 DIG_OPTION="+tls-ca @8.8.8.8"
 
+sleep $(od -An -N2 -i /dev/urandom | awk '{print ($1 % 10) + 1}')
 ######################################
 get_ip_address() {
 
