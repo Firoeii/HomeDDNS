@@ -16,7 +16,7 @@ CURL6="curl -s -6 --max-filesize 40 --connect-timeout 10 -m 10"
 
 ######################################################################
 
-# α╣Çα╕òα╕úα╕╡α╕óα╕íα╕¬α╕╕α╣êα╕í seed URL
+# seed URL
 RANDOM_NUMBER=$(od -An -N2 -i /dev/urandom | awk '{print $1}')
 NUMBER_MOD=$(expr $RANDOM_NUMBER % 15)
 
@@ -31,8 +31,6 @@ if [ "$ip_srv_count" != "6" ]; then
 	exit 1
 fi
 
-#
-# α╕íα╕▒α╕Öα╕íα╕╡α╕ºα╕┤α╕ÿα╕╡α╕óα╣êα╕¡α╣âα╕½α╣ëα╕¬α╕▒α╣ëα╕Öα╕üα╕ºα╣êα╕▓α╕Öα╕╡α╣ëα╣äα╕öα╣ëα╕¡α╕óα╣êα╕▓α╕çα╕íα╕▓α╕ü α╣üα╕òα╣êα╣äα╕íα╣êα╕¡α╕óα╕▓α╕üα╕ùα╕│...α╕íα╕▒α╕Öα╕¡α╣êα╕▓α╕Öα╣üα╕Üα╕Üα╣Çα╕éα╣ëα╕▓α╣âα╕êα╕óα╕▓α╕ü α╣üα╕Üα╕Üα╕Öα╕╡α╣ëα╕öα╕╣α╣üα╕Ñα╕óα╕▓α╕üα╕½α╕Öα╣êα╕¡α╕óα╕Öα╕░ α╣üα╕òα╣êα╣Çα╕éα╣ëα╕▓α╣âα╕êα╕çα╣êα╕▓α╕ó
 get_ip_address() {
 	# IP 4
 	if [ "$ADDR_VER" = "4" ] || [ "$ADDR_VER" = "all" ]; then
@@ -236,19 +234,27 @@ get_ip_address
 
 cd $(dirname $0)
 if [ "$ADDR_VER" = "4" ] || [ "$ADDR_VER" = "all" ];then
-	if ! ./validate-ipv4-6.elf i4 "$IP4_NEW_RAW_1" || ! ./validate-ipv4-6.elf i4 "$IP4_NEW_RAW_2" ;then
+	if ! ./validate-ipv4-6.elf i4 "$IP4_NEW_1" || ! ./validate-ipv4-6.elf i4 "$IP4_NEW_2" ;then
 		echo " BAD v4"
 		exit 1
 	fi
+	if [ "$IP4_NEW_1" != "$IP4_NEW_2" ] ;then
+		echo " source ip 4 mismatch"
+		exit 1
+	fi
+	echo "$IP4_NEW_1" > /tmp/_host_address_4.txt.move
+	mv /tmp/_host_address_4.txt.move /tmp/_host_address_4.txt
 fi
 if [ "$ADDR_VER" = "6" ] || [ "$ADDR_VER" = "all" ];then
-	if ! ./validate-ipv4-6.elf i6 "$IP6_NEW_RAW_1" || ! ./validate-ipv4-6.elf i6 "$IP6_NEW_RAW_2" ;then
+	if ! ./validate-ipv4-6.elf i6 "$IP6_NEW_1" || ! ./validate-ipv4-6.elf i6 "$IP6_NEW_2" ;then
 		echo " BAD v6"
 		exit 1
 	fi
+	if [ "$IP6_NEW_1" != "$IP6_NEW_2" ] ;then
+		echo " source ip 6 mismatch"
+		exit 1
+	fi
+	echo "$IP6_NEW_1" > /tmp/_host_address_6.txt.move
+	mv /tmp/_host_address_6.txt.move /tmp/_host_address_6.txt
 fi
-echo "$IP4_NEW_RAW_1" > /tmp/_host_address_4.txt.move
-echo "$IP6_NEW_RAW_1" > /tmp/_host_address_6.txt.move
-mv /tmp/_host_address_4.txt.move /tmp/_host_address_4.txt
-mv /tmp/_host_address_6.txt.move /tmp/_host_address_6.txt
 echo "Bye"
