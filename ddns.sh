@@ -48,8 +48,7 @@ DIG_OPTION="+tls-ca @1.1.1.1"
 DISCORD_URL=""
 DISCORD_HOOKNAME="MyHome"
 
-SLEEP_TIME="sleep 3"
-
+sleep $(od -An -N2 -i /dev/urandom | awk '{print ($1 % 10) + 1}')
 ################################################################################
 get_ip_address() {
 
@@ -237,7 +236,6 @@ NSUPDATE_EXIT_CODE=$?
 }
 
 get_ip_address
-$SLEEP_TIME
 get_ip_address_old
 compare_ip_address
 update_rfc2136
