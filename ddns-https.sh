@@ -21,7 +21,7 @@ TTL="60"
 NS="ns1.example.com"
 
 # TSIG KEY FILE (tsig-keygen -a hmac-sha512 LOLCAT)
-TSIG_PATH="/home/nusara/Documents/_bind9/key"
+TSIG_PATH="/PATH/TO/KEY/FILE"
 
 ## DiG Option "+tls-ca @1.1.1.1"
 DIG_OPTION="+tls-ca @8.8.8.8"
