@@ -4,22 +4,6 @@
 # ต้องใช้คู่กับ get-ip.sh
 # ต้องมี sh curl jq nsupdate
 #
-
-# IP Service
-## https://ifconfig.me/ip
-## https://ifconfig.co/ip
-## https://icanhazip.com/
-## https://myexternalip.com/raw
-## https://utils.furnu.net/ip
-## https://ifconfig.io/ip
-## เลือกแบบ Combination
-IPSRV_1="https://ifconfig.me/ip"
-IPSRV_2="https://ifconfig.co/ip"
-IPSRV_3="https://icanhazip.com/"
-IPSRV_4="https://myexternalip.com/raw"
-IPSRV_5="https://utils.furnu.net/ip"
-IPSRV_6="https://ifconfig.io/ip"
-
 ## Enter "4" for IPv4, "6" for IPv6, or "all" if you want to use all.
 # 4, 6, all
 RECORD_TYPE="4"
