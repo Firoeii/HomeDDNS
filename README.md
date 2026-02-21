@@ -51,13 +51,10 @@ gcc -Os -s -Wall -Wextra -ffunction-sections -fdata-sections -fno-exceptions -fn
 ## Crontab
 ตัวอย่าง โดยสามารถสำเนา ```ddns.sh``` เป็นไฟล์อะไรก็ได้และแก้ไขชื่อ DNS ตามต้องการ และเพิ่มไปยัง crontab ประมาณนี้
 ```sh
-# เนื่องจาก ddns.sh ไม่มีการดึง IP จากภายนอกแบบสด ๆ อีกต่อไป จะไปดึงจากแคชใน tmp แทน ต้องเพิ่ม get-ip.sh ลงไปด้วย นี่จะเป็นผลดีหากเครื่องนี้มีหลายโดเมน
+# dns.sh จะไม่มีการดึง IP จาก internet โดยตรง โดยจะไปดึงจากแคชใน tmp แทน ต้องเพิ่ม get-ip.sh ลงไปด้วย นี่จะเป็นผลดีหากเครื่องนี้มีหลายโดเมน/หลาย script ในเครื่อง
+# สามารถตั้งเวลา เรียกใช้ และ เวลา time out ตามความเหมาะสมได้เลย ในที่นี้จะเป็นเรียกทุก ๆ 60วิ หมดเวลา 30วิ
 * * * * * /bin/timeout 30 /home/USER/HomeDDNS/get-ip.sh >/dev/null 2>&1
 * * * * * /bin/timeout 30 /home/USER/HomeDDNS/ddns.sh >/dev/null 2>&1
-# หากมีโดเมนอื่น ๆ หรือ หลายซับโดเมนก็ให้สำเนาไฟล์ script มาเพิ่มได้เรื่อย ๆ
-* * * * * /bin/timeout 30 /home/USER/HomeDDNS/ddnsX.sh >/dev/null 2>&1
-. . .
-* * * * * /bin/timeout 30 /home/USER/HomeDDNS/ddnsN.sh >/dev/null 2>&1
 ```
 ## ซอฟต์แวร์ที่ต้องติดตั้งก่อนใช้งานบนเครื่อง Client
 
