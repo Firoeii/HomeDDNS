@@ -1,226 +1,77 @@
 #!/bin/sh
 #
+# Edit your zone list below~ (Line 50)
 #
-# ต้องใช้คู่กับ get-ip.sh
-# ต้องมี sh curl jq nsupdate
-#
-## Enter "4" for IPv4, "6" for IPv6, or "all" if you want to use all.
-# 4, 6, all
-RECORD_TYPE="4"
+[ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -n "$0" "$0" "$@" || :
+set -eu
+. "$(dirname "$0")/function.sh"
 
-# APEX ZONE
-# example.net
-ZONE="example.net"
-
-# QNAME
-# example.net, myhome.example.net
-QNAME="myhome.example.net"
-
-TTL="60"
-
-# Name Server Host Name or IP Address
+RECORD_TYPE="all"
 NS="ns1.example.net"
-
-# TSIG KEY FILE (tsig-keygen -a hmac-sha512 LOLCAT)
-TSIG_PATH="/FULL/PATH/TO/KEY/FILE"
-
-## DiG Option "+tls-ca @1.1.1.1"
-DIG_OPTION="+tls-ca @1.1.1.1"
+TSIG_PATH="/TO/MY/KEY"
+DIG_OPTION="+tls-ca @8.8.8.8"
+NSUPDATE_CMD="nsupdate -p 53 -v"
 
 # Discord webhook URL
 # Leave blank if not used
 DISCORD_URL=""
-DISCORD_HOOKNAME="MyHome"
+DISCORD_HOOKNAME="MyHome!"
 
-sleep $(od -An -N2 -i /dev/urandom | awk '{print ($1 % 10) + 1}')
-################################################################################
-get_ip_address() {
+PATH_IP_4="/tmp/_host_address_4.txt"
+PATH_IP_6="/tmp/_host_address_6.txt"
 
-	if [ "$RECORD_TYPE" = "4" ] || [ "$RECORD_TYPE" = "all" ] ;then
-		if ! IP4_NEW=$(cat /tmp/_host_address_4.txt);then
-			echo "IP file on /tmp/_host_address_4.txt missing"
-			exit 1
-		fi
-	fi
-	if [ "$RECORD_TYPE" = "6" ] || [ "$RECORD_TYPE" = "all" ] ;then
-		if ! IP6_NEW=$(cat /tmp/_host_address_6.txt);then
-			echo "IP file on /tmp/_host_address_6.txt missing"
-			exit 1
-		fi
-	fi
+HOOK_NOTIFY="0"
+if get_ip_address "$RECORD_TYPE" "$PATH_IP_4" "$PATH_IP_6";then
+	echo "[ \e[92m OK \e[0m ] Get IP for this host"
+else
+	echo "[ \e[31mFAIL\e[0m ] get_ip_address"
+	HOOK_NOTIFY="1"
+fi
 
-}
 
-get_ip_address_old() {
-	if [ "$RECORD_TYPE" = "4" ] || [ "$RECORD_TYPE" = "all" ] ;then
-		IP4_OLD="$(dig $QNAME +short $DIG_OPTION -t A)"
-		GET_ADDRESS_4_EXIT_CODE="$?"
-		if [ "$GET_ADDRESS_4_EXIT_CODE" != "0" ] ; then
-			echo "DiG Unable to get old address 4"
-			if [ ! -z "$DISCORD_URL" ]; then
-				curl \
-				  -H "Content-Type: application/json" \
-				  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "DiG Unable to get old address 4, DiG exit code $GET_ADDRESS_4_EXIT_CODE, Output message $IP4_OLD" '{"username": $username, "content": $content}')" \
-				  $DISCORD_URL
-				jq -n --arg username $DISCORD_HOOKNAME --arg content "DiG Unable to get old address 4, DiG exit code $GET_ADDRESS_4_EXIT_CODE, Output message $IP4_OLD" '{"username": $username, "content": $content}'
-				exit 1
-			fi
-			exit 1
-		fi
-		if [ -z "$IP4_OLD" ]; then
-			echo "Please add \"A\" record before use. (0.0.0.0)"
-			exit 1
-		fi
-		echo "IP4 old $IP4_OLD"
-	fi
-	if [ "$RECORD_TYPE" = "6" ] || [ "$RECORD_TYPE" = "all" ] ;then
-		IP6_OLD="$(dig $QNAME +short $DIG_OPTION -t AAAA)"
-		GET_ADDRESS_6_EXIT_CODE="$?"
-		if [ "$GET_ADDRESS_6_EXIT_CODE" != "0" ] ; then
-			echo "DiG Unable to get old address 6"
-			if [ ! -z "$DISCORD_URL" ]; then
-				curl \
-				  -H "Content-Type: application/json" \
-				  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "DiG Unable to get old address 6, DiG exit code $GET_ADDRESS_6_EXIT_CODE, Output message $IP6_OLD" '{"username": $username, "content": $content}')" \
-				  $DISCORD_URL
-				jq -n --arg username $DISCORD_HOOKNAME --arg content "DiG Unable to get old address 6, DiG exit code $GET_ADDRESS_6_EXIT_CODE, Output message $IP6_OLD" '{"username": $username, "content": $content}'
-				exit 1
-			fi
-			exit 1
-		fi
-		if [ -z "$IP6_OLD" ]; then
-			echo "Please add \"AAAA\" record before use. (::1)"
-			exit 1
-		fi
-		echo "IP6 old $IP6_OLD"
-	fi	
-}
-
-compare_ip_address() {
-	if [ "$RECORD_TYPE" = "6" ] && [ "$IP6_NEW" = "$IP6_OLD" ]; then
-		echo "IP6 not change bye!"
-		exit 0
-	elif [ "$RECORD_TYPE" = "4" ] && [ "$IP4_NEW" = "$IP4_OLD" ]; then
-		echo "IP4 not change bye!"
-		exit 0
-	elif [ "$RECORD_TYPE" = "all" ]; then
-		if [ "$IP6_NEW" = "$IP6_OLD" ] && [ "$IP4_NEW" = "$IP4_OLD" ]; then
-			echo "IP4 and IP6 not change bye!"
-			exit 0
+while read -r zone qname ttl; do
+	if get_ip_address_old "$RECORD_TYPE" "$qname" "$DIG_OPTION";then
+		echo "[ \e[92m OK \e[0m ] Get Old IP for $qname"
+		if compare_ip_address "$RECORD_TYPE";then
+			echo "[ \e[92m OK \e[0m ] IP unchanged $qname"
 		else
-			if [ "$IP6_NEW" = "$IP6_OLD" ]; then
-				echo "IP6 not change!"
-			fi
-			if [ "$IP4_NEW" = "$IP4_OLD" ]; then
-				echo "IP4 not change!"
+			echo "[ \e[93mTry\e[0m  ] Update $qname"
+			if update_rfc2136 "$NSUPDATE_CMD" "$NS" "$zone" "$qname" "$ttl" "$RECORD_TYPE"; then
+				HOOK_NOTIFY="3"
+				echo "[ \e[92m OK \e[0m ] NOERROR"
+			else
+				HOOK_NOTIFY="$?"
+				echo "[ \e[31mFAIL\e[0m ] at $qname"
 			fi
 		fi
+	else
+		echo "[ \e[31mFAIL\e[0m ] $qname get_ip_address_old (if NXRRSET pls add 0.0.0.0 or ::1 !)"
+		HOOK_NOTIFY="1"
 	fi
-}
+done <<EOF
+home.arpa change.me.pls.home.arpa 30
+my-example.net my-example.net 60
+EOF
 
-update_rfc2136() {
-	if [ "$RECORD_TYPE" = "4" ]; then
-nsupdate -d -v -k $TSIG_PATH << EOF
-server $NS
-zone $ZONE
-update delete $QNAME A
-update add $QNAME $TTL A $IP4_NEW
-send
-EOF
-NSUPDATE_EXIT_CODE=$?
-		if [ ! -z "$DISCORD_URL" ]; then
-			curl \
-			  -H "Content-Type: application/json" \
-			  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 4 FQDN $QNAME addr $IP4_OLD Change to $IP4_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}')" \
-			  $DISCORD_URL
-			jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 4 FQDN $QNAME addr $IP4_OLD Change to $IP4_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}'
-			exit 0
-		fi
-	fi
-	if [ "$RECORD_TYPE" = "6" ]; then
-nsupdate -d -v -k $TSIG_PATH << EOF
-server $NS
-zone $ZONE
-update delete $QNAME AAAA
-update add $QNAME $TTL AAAA $IP6_NEW
-send
-EOF
-NSUPDATE_EXIT_CODE=$?
-		if [ ! -z "$DISCORD_URL" ]; then
-			curl \
-			  -H "Content-Type: application/json" \
-			  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 6 FQDN $QNAME addr $IP6_OLD Change to $IP6_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}')" \
-			  $DISCORD_URL
-			jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 6 FQDN $QNAME addr $IP6_OLD Change to $IP6_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}'
-			exit 0
-		fi
-	fi
-	if [ "$RECORD_TYPE" = "all" ]; then
-		if [ "$IP6_NEW" != "$IP6_OLD" ] && [ "$IP4_NEW" != "$IP4_OLD" ]; then
-			echo "IP4 and IP6 Change..."
-nsupdate -d -v -k $TSIG_PATH << EOF
-server $NS
-zone $ZONE
-update delete $QNAME AAAA
-update add $QNAME $TTL AAAA $IP6_NEW
-update delete $QNAME A
-update add $QNAME $TTL A $IP4_NEW
-send
-EOF
-NSUPDATE_EXIT_CODE=$?
-			if [ ! -z "$DISCORD_URL" ]; then
-				curl \
-				  -H "Content-Type: application/json" \
-				  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 6 and 4 FQDN $QNAME addr 6 $IP6_OLD,4 $IP4_OLD Change to 6 $IP6_NEW, $IP4_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}')" \
-				  $DISCORD_URL
-				jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 6 and 4 FQDN $QNAME addr 6 $IP6_OLD,4 $IP4_OLD Change to 6 $IP6_NEW, $IP4_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}'
-				exit 0
-			fi
-			:
-		elif [ "$IP6_NEW" != "$IP6_OLD" ]; then
-			echo "IP6 Change..."
-nsupdate -d -v -k $TSIG_PATH << EOF
-server $NS
-zone $ZONE
-update delete $QNAME AAAA
-update add $QNAME $TTL AAAA $IP6_NEW
-send
-EOF
-NSUPDATE_EXIT_CODE=$?
-			if [ ! -z "$DISCORD_URL" ]; then
-				curl \
-				  -H "Content-Type: application/json" \
-				  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 6 FQDN $QNAME addr $IP6_OLD Change to $IP6_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}')" \
-				  $DISCORD_URL
-				jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 6 FQDN $QNAME addr $IP6_OLD Change to $IP6_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}'
-				exit 0
-			fi
-			:
-		elif [ "$IP4_NEW" != "$IP4_OLD" ]; then
-			echo "IP4 Change..."
-nsupdate -d -v -k $TSIG_PATH << EOF
-server $NS
-zone $ZONE
-update delete $QNAME A
-update add $QNAME $TTL A $IP4_NEW
-send
-EOF
-NSUPDATE_EXIT_CODE=$?
-			if [ ! -z "$DISCORD_URL" ]; then
-				curl \
-				  -H "Content-Type: application/json" \
-				  -d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 4 FQDN $QNAME addr $IP4_OLD Change to $IP4_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}')" \
-				  $DISCORD_URL
-				jq -n --arg username $DISCORD_HOOKNAME --arg content "RECORD_TYPE 4 FQDN $QNAME addr $IP4_OLD Change to $IP4_NEW update exit code is $NSUPDATE_EXIT_CODE" '{"username": $username, "content": $content}'
-				exit 0
-			fi
-			:
-		fi
-	fi
-}
-
-get_ip_address
-get_ip_address_old
-compare_ip_address
-update_rfc2136
-exit $NSUPDATE_EXIT_CODE
+if [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "1" ]; then
+	curl \
+		-H "Content-Type: application/json" \
+		-d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content \
+		"A temporary (network/other) error in update script. If you see it more than many times, it's probably not temporary." \
+		'{"username": $username, "content": $content}')" \
+		$DISCORD_URL
+elif [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "2" ]; then
+	curl \
+		-H "Content-Type: application/json" \
+		-d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content \
+		"nsupdate error fix me pls." \
+		'{"username": $username, "content": $content}')" \
+		$DISCORD_URL
+elif [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "3" ]; then
+	curl \
+		-H "Content-Type: application/json" \
+		-d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content \
+		"Update OK. V6=${IP6_OLD},V4=${IP4_OLD} To V6=${IP6_NEW},V4=${IP4_NEW}" \
+		'{"username": $username, "content": $content}')" \
+		$DISCORD_URL
+fi
