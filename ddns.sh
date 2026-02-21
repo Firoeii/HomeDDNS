@@ -56,21 +56,21 @@ EOF
 if [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "1" ]; then
 	curl \
 		-H "Content-Type: application/json" \
-		-d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content \
+		-d "$(jq -n --arg username "$DISCORD_HOOKNAME" --arg content \
 		"A temporary (network/other) error in update script. If you see it more than many times, it's probably not temporary." \
 		'{"username": $username, "content": $content}')" \
 		$DISCORD_URL
 elif [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "2" ]; then
 	curl \
 		-H "Content-Type: application/json" \
-		-d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content \
+		-d "$(jq -n --arg username "$DISCORD_HOOKNAME" --arg content \
 		"nsupdate error fix me pls." \
 		'{"username": $username, "content": $content}')" \
 		$DISCORD_URL
 elif [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "3" ]; then
 	curl \
 		-H "Content-Type: application/json" \
-		-d "$(jq -n --arg username $DISCORD_HOOKNAME --arg content \
+		-d "$(jq -n --arg username "$DISCORD_HOOKNAME" --arg content \
 		"Update OK. V6=${IP6_OLD},V4=${IP4_OLD} To V6=${IP6_NEW},V4=${IP4_NEW}" \
 		'{"username": $username, "content": $content}')" \
 		$DISCORD_URL
