@@ -37,7 +37,9 @@ while read -r zone qname ttl; do
 		else
 			echo "[ \e[93mTry\e[0m  ] Update $qname"
 			if update_rfc2136 "$NSUPDATE_CMD" "$NS" "$zone" "$qname" "$ttl" "$RECORD_TYPE"; then
-				HOOK_NOTIFY="3"
+				if [ "$HOOK_NOTIFY" != "1" ] && [ "$HOOK_NOTIFY" != "2" ]; then
+					HOOK_NOTIFY="3"
+				fi
 				echo "[ \e[92m OK \e[0m ] NOERROR"
 			else
 				HOOK_NOTIFY="$?"
