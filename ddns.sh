@@ -22,7 +22,7 @@ PATH_IP_6="/tmp/_host_address_6.txt"
 
 HOOK_NOTIFY="0"
 if get_ip_address "$RECORD_TYPE" "$PATH_IP_4" "$PATH_IP_6";then
-	echo "[ \e[92m OK \e[0m ] Get IP for this host"
+	echo "[ \e[92m OK \e[0m ] Get IP for this host $(cat "${PATH_IP_6}"), $(cat "${PATH_IP_4}")"
 else
 	echo "[ \e[31mFAIL\e[0m ] get_ip_address"
 	HOOK_NOTIFY="1"
@@ -33,9 +33,9 @@ while read -r zone qname ttl; do
 	if get_ip_address_old "$RECORD_TYPE" "$qname" "$DIG_OPTION";then
 		echo "[ \e[92m OK \e[0m ] Get Old IP for $qname"
 		if compare_ip_address "$RECORD_TYPE";then
-			echo "[ \e[92m OK \e[0m ] IP unchanged $qname"
+			echo "[ \e[92m OK \e[0m ] IP unchanged $qname, Old addr is: $IP6_OLD, $IP4_OLD"
 		else
-			echo "[ \e[93mTry\e[0m  ] Update $qname"
+			echo "[ \e[93mTry\e[0m  ] Update $qname, Old addr is: $IP6_OLD, $IP4_OLD"
 			if update_rfc2136 "$NSUPDATE_CMD" "$NS" "$zone" "$qname" "$ttl" "$RECORD_TYPE"; then
 				if [ "$HOOK_NOTIFY" != "1" ] && [ "$HOOK_NOTIFY" != "2" ]; then
 					HOOK_NOTIFY="3"
@@ -61,19 +61,22 @@ if [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "1" ]; then
 		-d "$(jq -n --arg username "$DISCORD_HOOKNAME" --arg content \
 		"A temporary (network/other) error in update script. If you see it more than many times, it's probably not temporary." \
 		'{"username": $username, "content": $content}')" \
-		$DISCORD_URL
+		"$DISCORD_URL"
 elif [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "2" ]; then
 	curl \
 		-H "Content-Type: application/json" \
 		-d "$(jq -n --arg username "$DISCORD_HOOKNAME" --arg content \
 		"nsupdate error fix me pls." \
 		'{"username": $username, "content": $content}')" \
-		$DISCORD_URL
+		"$DISCORD_URL"
 elif [ -n "$DISCORD_URL" ] && [ "$HOOK_NOTIFY" = "3" ]; then
 	curl \
 		-H "Content-Type: application/json" \
 		-d "$(jq -n --arg username "$DISCORD_HOOKNAME" --arg content \
 		"Update OK. V6=${IP6_OLD},V4=${IP4_OLD} To V6=${IP6_NEW},V4=${IP4_NEW}" \
 		'{"username": $username, "content": $content}')" \
-		$DISCORD_URL
+		"$DISCORD_URL"
 fi
+[ "$HOOK_NOTIFY" = "1" ] && exit 1
+[ "$HOOK_NOTIFY" = "2" ] && exit 2
+exit 0
