@@ -1,4 +1,6 @@
 #!/bin/sh
+IP4_OLD=""
+IP6_OLD=""
 get_ip_address() {
 	local RECORD_TYPE="$1"
 	local PATH_4="$2"
